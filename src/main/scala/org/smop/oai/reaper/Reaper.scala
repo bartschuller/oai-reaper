@@ -72,6 +72,32 @@ class Reaper(baseUrl: String) {
     }
   }
 
+  def listIdentifiers(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Either[String, Seq[HeaderType]] = {
+    var params = Map(verb -> ListIdentifiers, "metadataPrefix" -> metadataPrefix, "set" -> set, "from" -> from, "until" -> until)
+    params = params.filter(_ match {
+      case (_, None) => false
+      case _ => true
+    }).mapValues(_ match {
+      case Some(v: String) => v
+      case v => v
+    })
+
+    val req = baseReq <<? params
+    try {
+      http(req <> {
+        x =>
+          val opts = fromXML[OAIPMHtype](x).oaipmhtypeoption
+          opts.head.value match {
+            case err: OAIPMHerrorType => Left(errsToString(opts))
+            case idents: ListIdentifiersType => Right(idents.header) // TODO handle resumption
+            case other => Left("got [" + other.toString + "] instead of Identify response")
+          }
+      })
+    } catch {
+      case ex => Left(ex.toString)
+    }
+  }
+
   private def errsToString(errs: Seq[DataRecord[OAIPMHtypeOption]]): String =
     errs.foldLeft("") {
       (b, a) => b + a.as[OAIPMHerrorType].toString + "\n"

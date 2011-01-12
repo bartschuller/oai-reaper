@@ -4,7 +4,7 @@ import org.specs._
 import log.ConsoleLog
 import org.smop.oai.reaper.Reaper
 import java.net.URI
-import org.smop.oai.{SetType, MetadataFormatType, IdentifyType}
+import org.smop.oai._
 
 /**
  * Created by IntelliJ IDEA.
@@ -42,6 +42,13 @@ object ReaperSpecification extends Specification with ConsoleLog {
       reaper.listSets match {
         case Right(formats: Seq[_]) =>
           formats must contain(SetType("collection:RidingShotgun","Items with collection equal to RidingShotgun",List()))
+        case Left(wrong) => fail("got "+wrong)
+      }
+    }
+    "handle ListIdentifiers" in {
+      reaper.listIdentifiers("oai_dc", Some("collection:RidingShotgun")) match {
+        case Right(headers: Seq[_]) =>
+          headers must contain(HeaderType(new URI("oai:archive.org:ridingshotgun2006-03-25.sbd.flac16"), "2010-01-31T06:08:34Z", List("mediatype:etree", "collection:RidingShotgun", "collection:etree")))
         case Left(wrong) => fail("got "+wrong)
       }
     }
