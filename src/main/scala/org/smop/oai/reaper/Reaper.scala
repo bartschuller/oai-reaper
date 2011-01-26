@@ -55,7 +55,7 @@ class Reaper(baseUrl: String) {
     }
   }
 
-  private class ResumptionIterator[T](initialSeq: Seq[T], resume: (Option[String]) => Product2[Iterator[T], Option[String]], var token: Option[String]) extends Iterator[T] {
+  protected class ResumptionIterator[T](initialSeq: Seq[T], resume: (Option[String]) => Product2[Iterator[T], Option[String]], var token: Option[String]) extends Iterator[T] {
     var innerIterator = initialSeq.iterator
 
     def next(): T = innerIterator.next()
@@ -71,7 +71,7 @@ class Reaper(baseUrl: String) {
       }
   }
 
-  private object ListSetsReq {
+  protected object ListSetsReq {
     def initial(): Iterator[SetType] = {
       val (set, token) = doReq(baseReq <<? Map(verb -> ListSets))
       new ResumptionIterator(set, resume _, token)
@@ -105,7 +105,7 @@ class Reaper(baseUrl: String) {
 
   def listSets: Iterator[SetType] = ListSetsReq.initial
 
-  private object ListIdentifiersReq {
+  protected object ListIdentifiersReq {
     def initial(metadataPrefix: String, set: Option[String], from: Option[String], until: Option[String]): Iterator[HeaderType] = {
       val params: Map[String, String] = Map(verb -> ListIdentifiers.toString, "metadataPrefix" -> metadataPrefix, "set" -> set, "from" -> from, "until" -> until).filter(_ match {
         case (_, None) => false
@@ -121,6 +121,7 @@ class Reaper(baseUrl: String) {
     def resume(metadataPrefix: String)(resumptionToken: Option[String]): Product2[Iterator[HeaderType], Option[String]] = {
       resumptionToken match {
         case None => (Iterator(), None)
+        case Some("") => (Iterator(), None)
         case Some(token) => {
           val (set, newToken) = doReq(baseReq <<? Map(verb -> ListIdentifiers, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
           return (set.iterator, newToken)
@@ -146,7 +147,7 @@ class Reaper(baseUrl: String) {
 
   def listIdentifiers(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[HeaderType] = ListIdentifiersReq.initial(metadataPrefix, set, from, until)
 
-  private def errsToString(errs: Seq[DataRecord[OAIPMHtypeOption]]): String =
+  protected def errsToString(errs: Seq[DataRecord[OAIPMHtypeOption]]): String =
     errs.foldLeft("") {
       (b, a) => b + a.as[OAIPMHerrorType].toString + "\n"
     }

@@ -134,7 +134,7 @@ trait DefaultXMLProtocol extends XMLProtocol {
     val targetNamespace: Option[String] = Some("http://www.openarchives.org/OAI/2.0/")
     
     def reads(seq: scala.xml.NodeSeq): Either[String, org.smop.oai.RequestType] = seq match {
-      case node: scala.xml.Node => Right(org.smop.oai.RequestType(fromXML[java.net.URI](node),
+      case node: scala.xml.Node => Right(org.smop.oai.RequestType(fromXML[java.net.URI](scala.xml.Text(node.text.trim)),
         (node \ "@verb").headOption map { fromXML[org.smop.oai.VerbType](_) },
         (node \ "@identifier").headOption map { fromXML[java.net.URI](_) },
         (node \ "@metadataPrefix").headOption map { fromXML[String](_) },
