@@ -33,5 +33,8 @@ object ReaperSpecification extends Specification with ConsoleLog {
     "handle ListIdentifiers" in {
       reaper.listIdentifiers("oai_dc", Some("collection:RidingShotgun")).toSeq must contain(HeaderType(new URI("oai:archive.org:ridingshotgun2006-03-25.sbd.flac16"), "2010-01-31T06:08:34Z", List("mediatype:etree", "collection:RidingShotgun", "collection:etree")))
     }
+    "return headers from ListRecords" in {
+      reaper.listRecords("oai_dc", Some("collection:RidingShotgun")).map(_.header).toSeq must contain(HeaderType(new URI("oai:archive.org:ridingshotgun2006-03-25.sbd.flac16"), "2010-01-31T06:08:34Z", List("mediatype:etree", "collection:RidingShotgun", "collection:etree")))
+    }
   }
 }

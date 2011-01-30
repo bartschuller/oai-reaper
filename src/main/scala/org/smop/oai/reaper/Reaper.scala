@@ -56,6 +56,10 @@ class Reaper(baseUrl: String) {
     }
   }
 
+  def listSets: Iterator[SetType] = ListSetsReq.initial
+  def listIdentifiers(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[HeaderType] = ListIdentifiersReq.initial(metadataPrefix, set, from, until)
+  def listRecords(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[RecordType] = ListRecordsReq.initial(metadataPrefix, set, from, until)
+
   protected object ListSetsReq {
     def initial(): Iterator[SetType] = {
       val (set, token) = doReq(baseReq <<? Map(verb -> ListSets))
@@ -85,8 +89,6 @@ class Reaper(baseUrl: String) {
         case ex: Exception => throw new ReapException("listSets failed: ", ex)
       }
   }
-
-  def listSets: Iterator[SetType] = ListSetsReq.initial
 
   protected object ListIdentifiersReq {
     def initial(metadataPrefix: String, set: Option[String], from: Option[String], until: Option[String]): Iterator[HeaderType] = {
@@ -128,7 +130,45 @@ class Reaper(baseUrl: String) {
       }
   }
 
-  def listIdentifiers(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[HeaderType] = ListIdentifiersReq.initial(metadataPrefix, set, from, until)
+  protected object ListRecordsReq {
+    def initial(metadataPrefix: String, set: Option[String], from: Option[String], until: Option[String]): Iterator[RecordType] = {
+      val params: Map[String, String] = Map(verb -> ListRecords.toString, "metadataPrefix" -> metadataPrefix, "set" -> set, "from" -> from, "until" -> until).filter(_ match {
+        case (_, None) => false
+        case _ => true
+      }).mapValues(_ match {
+        case Some(v: String) => v
+        case v: String => v
+      })
+      val (seq, token) = doReq(baseReq <<? params)
+      new ResumptionIterator(seq.iterator, resume(metadataPrefix) _, token)
+    }
+
+    def resume(metadataPrefix: String)(resumptionToken: Option[String]): Product2[Iterator[RecordType], Option[String]] = {
+      resumptionToken match {
+        case None => (Iterator(), None)
+        case Some("") => (Iterator(), None)
+        case Some(token) => {
+          val (set, newToken) = doReq(baseReq <<? Map(verb -> ListIdentifiers, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
+          return (set.iterator, newToken)
+        }
+      }
+    }
+
+    def doReq(req: Request): Product2[Seq[RecordType], Option[String]] =
+      try {
+        http(req <> {
+          x =>
+            val opts = fromXML[OAIPMHtype](x).oaipmhtypeoption
+            opts.head.value match {
+              case err: OAIPMHerrorType => throw new ReapException(errsToString(opts))
+              case records: ListRecordsType => (records.record, records.resumptionToken.map(_.value))
+              case other => throw new ReapException("listRecords failed: got [" + other.toString + "] instead of ListRecords response")
+            }
+        })
+      } catch {
+        case ex: Exception => throw new ReapException("listRecords failed: ", ex)
+      }
+  }
 
   protected def errsToString(errs: Seq[DataRecord[OAIPMHtypeOption]]): String =
     errs.foldLeft("") {
