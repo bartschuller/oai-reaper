@@ -1,4 +1,4 @@
-package org.smop.collections
+package org.smop.collection
 
 /** Iterates over a succession of iterators.
   * @param delegate the first inner iterator

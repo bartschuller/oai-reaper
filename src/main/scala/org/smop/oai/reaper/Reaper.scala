@@ -5,7 +5,7 @@ import scalaxb._
 import Scalaxb._
 import org.smop.oai.DefaultXMLProtocol._
 import org.smop.oai._
-import org.smop.collections.ResumptionIterator
+import org.smop.collection.ResumptionIterator
 
 /**
  * Created by IntelliJ IDEA.
