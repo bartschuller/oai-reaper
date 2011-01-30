@@ -5,6 +5,7 @@ import scalaxb._
 import Scalaxb._
 import org.smop.oai.DefaultXMLProtocol._
 import org.smop.oai._
+import org.smop.collections.ResumptionIterator
 
 /**
  * Created by IntelliJ IDEA.
@@ -55,35 +56,17 @@ class Reaper(baseUrl: String) {
     }
   }
 
-  protected class ResumptionIterator[T](initialSeq: Seq[T], resume: (Option[String]) => Product2[Iterator[T], Option[String]], var token: Option[String]) extends Iterator[T] {
-    var innerIterator = initialSeq.iterator
-
-    def next(): T = innerIterator.next()
-
-    def hasNext =
-      if (innerIterator.hasNext)
-        true
-      else {
-        val (newIterator, newToken) = resume(token)
-        innerIterator = newIterator
-        token = newToken
-        innerIterator.hasNext
-      }
-  }
-
   protected object ListSetsReq {
     def initial(): Iterator[SetType] = {
       val (set, token) = doReq(baseReq <<? Map(verb -> ListSets))
-      new ResumptionIterator(set, resume _, token)
+      new ResumptionIterator(set.iterator, resume, token)
     }
 
-    def resume(resumptionToken: Option[String]): Product2[Iterator[SetType], Option[String]] = {
-      resumptionToken match {
-        case None => (Iterator(), None)
-        case Some(token) => {
-          val (seq, newToken) = doReq(baseReq <<? Map(verb -> ListSets, "resumptionToken" -> token))
-          return (seq.iterator, newToken)
-        }
+    val resume: (Option[String]) => Product2[Iterator[SetType], Option[String]] = {
+      case None => (Iterator(), None)
+      case Some(token) => {
+        val (seq, newToken) = doReq(baseReq <<? Map(verb -> ListSets, "resumptionToken" -> token))
+        (seq.iterator, newToken)
       }
     }
 
@@ -115,7 +98,7 @@ class Reaper(baseUrl: String) {
         case v: String => v
       })
       val (seq, token) = doReq(baseReq <<? params)
-      new ResumptionIterator(seq, resume(metadataPrefix) _, token)
+      new ResumptionIterator(seq.iterator, resume(metadataPrefix) _, token)
     }
 
     def resume(metadataPrefix: String)(resumptionToken: Option[String]): Product2[Iterator[HeaderType], Option[String]] = {
