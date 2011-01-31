@@ -20,6 +20,10 @@ class KBReaperSpecification extends Specification with ConsoleLog {
       val l = reaper.listIdentifiers("didl", Some("anp")).take(2000).length
       l must be_==(2000)
     }
+    "handle ListRecords" in {
+      val l = reaper.listRecords("didl", Some("anp")).take(500).length
+      l must be_==(500)
+    }
     /*
     "handle bogus ResumptionToken" in {
       skip("test data changed from under us")
