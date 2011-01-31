@@ -148,7 +148,7 @@ class Reaper(baseUrl: String) {
         case None => (Iterator(), None)
         case Some("") => (Iterator(), None)
         case Some(token) => {
-          val (set, newToken) = doReq(baseReq <<? Map(verb -> ListIdentifiers, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
+          val (set, newToken) = doReq(baseReq <<? Map(verb -> ListRecords.toString, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
           return (set.iterator, newToken)
         }
       }
