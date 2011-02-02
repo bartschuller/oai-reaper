@@ -5,6 +5,7 @@ import org.specs.Specification
 import org.specs.log.ConsoleLog
 import org.smop.oai._
 import reaper.KBReaper
+import xml.NodeSeq
 
 
 class KBReaperSpecification extends Specification with ConsoleLog {
@@ -32,5 +33,8 @@ class KBReaperSpecification extends Specification with ConsoleLog {
       idents must contain("SGD:sgd:mpeg21:19781979:0007057")
     }
     */
+    "handle getRecord" in {
+      reaper.getRecord("anp:anp:1937:10:07:22:mpeg21", "didl").metadata.get.any.value.asInstanceOf[NodeSeq] must \\(<recordRights/>)
+    }
   }
 }

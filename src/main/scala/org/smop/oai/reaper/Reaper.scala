@@ -23,7 +23,7 @@ class Reaper(baseUrl: String) {
   val baseReq = new Request(baseUrl)
 
   def identify: IdentifyType = {
-    val req = baseReq <<? Map(verb -> Identify)
+    val req = baseReq <<? Map(verb -> Identify.toString)
     try {
       http(req <> {
         x =>
@@ -40,7 +40,7 @@ class Reaper(baseUrl: String) {
   }
 
   def listMetadataFormats: Seq[MetadataFormatType] = {
-    val req = baseReq <<? Map(verb -> ListMetadataFormats)
+    val req = baseReq <<? Map(verb -> ListMetadataFormats.toString)
     try {
       http(req <> {
         x =>
@@ -56,20 +56,37 @@ class Reaper(baseUrl: String) {
     }
   }
 
+  def getRecord(identifier: String, metadataPrefix: String): RecordType = {
+    val req = baseReq <<? Map(verb -> GetRecord.toString, "metadataPrefix" -> metadataPrefix, "identifier" -> identifier)
+    try {
+      http(req <> {
+        x =>
+          val opts = fromXML[OAIPMHtype](x).oaipmhtypeoption
+          opts.head.value match {
+            case err: OAIPMHerrorType => throw new ReapException(errsToString(opts))
+            case myRecord: GetRecordType => myRecord.record
+            case other => throw new ReapException("getRecord failed: got [" + other.toString + "] instead of GetRecord response")
+          }
+      })
+    } catch {
+      case ex: Exception => throw new ReapException("GetRecord failed: ", ex)
+    }
+  }
+
   def listSets: Iterator[SetType] = ListSetsReq.initial
   def listIdentifiers(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[HeaderType] = ListIdentifiersReq.initial(metadataPrefix, set, from, until)
   def listRecords(metadataPrefix: String, set: Option[String] = None, from: Option[String] = None, until: Option[String] = None): Iterator[RecordType] = ListRecordsReq.initial(metadataPrefix, set, from, until)
 
   protected object ListSetsReq {
     def initial(): Iterator[SetType] = {
-      val (set, token) = doReq(baseReq <<? Map(verb -> ListSets))
+      val (set, token) = doReq(baseReq <<? Map(verb -> ListSets.toString))
       new ResumptionIterator(set.iterator, resume, token)
     }
 
     val resume: (Option[String]) => Product2[Iterator[SetType], Option[String]] = {
       case None => (Iterator(), None)
       case Some(token) => {
-        val (seq, newToken) = doReq(baseReq <<? Map(verb -> ListSets, "resumptionToken" -> token))
+        val (seq, newToken) = doReq(baseReq <<? Map(verb -> ListSets.toString, "resumptionToken" -> token))
         (seq.iterator, newToken)
       }
     }
@@ -108,7 +125,7 @@ class Reaper(baseUrl: String) {
         case None => (Iterator(), None)
         case Some("") => (Iterator(), None)
         case Some(token) => {
-          val (set, newToken) = doReq(baseReq <<? Map(verb -> ListIdentifiers, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
+          val (set, newToken) = doReq(baseReq <<? Map(verb -> ListIdentifiers.toString, "metadataPrefix" -> metadataPrefix, "resumptionToken" -> token))
           return (set.iterator, newToken)
         }
       }

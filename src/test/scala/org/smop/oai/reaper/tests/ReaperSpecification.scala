@@ -5,6 +5,7 @@ import log.ConsoleLog
 import org.smop.oai.reaper.{Reaper, ReapException}
 import java.net.URI
 import org.smop.oai._
+import scala.xml.NodeSeq
 
 /**
  * Created by IntelliJ IDEA.
@@ -35,6 +36,9 @@ object ReaperSpecification extends Specification with ConsoleLog {
     }
     "return headers from ListRecords" in {
       reaper.listRecords("oai_dc", Some("collection:RidingShotgun")).map(_.header).toSeq must contain(HeaderType(new URI("oai:archive.org:ridingshotgun2006-03-25.sbd.flac16"), "2010-01-31T06:08:34Z", List("mediatype:etree", "collection:RidingShotgun", "collection:etree")))
+    }
+    "handle getRecord" in {
+      reaper.getRecord("oai:archive.org:ridingshotgun2006-03-25.sbd.flac16", "oai_dc").metadata.get.any.value.asInstanceOf[NodeSeq] must \\(<format/>)
     }
   }
 }
